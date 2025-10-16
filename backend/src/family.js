@@ -22,6 +22,11 @@ router.post('/create', async (req, res) => {
       data: { name, ownerId: userId },
     });
 
+    await prisma.user.update({
+      where: { id: userId },
+      data: { familyId: family.id },
+    });
+
     const token = sign({ familyId: family.id }, JWT_SECRET, {
       expiresIn: '7d',
     });

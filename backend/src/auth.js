@@ -22,7 +22,7 @@ router.post('/signup', async (req, res) => {
 
     const token = sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name,   familyId: user.familyId, } });
   } catch (error) {
     console.error('Full error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
@@ -43,7 +43,7 @@ router.post('/login', async (req, res) => {
 
     const token = sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, familyId: user.familyId, } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
