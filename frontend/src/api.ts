@@ -20,3 +20,7 @@ export async function login({ email, password }: apiAuthType) {
   return res.data
 }
 
+export async function createFamily(token, name) {
+  const res = await axios.post(`${API_URL}/family/create`, name, { headers: authHeader(token) });
+  return res.data;
+}

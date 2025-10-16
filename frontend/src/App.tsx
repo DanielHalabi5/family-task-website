@@ -2,12 +2,17 @@ import { useEffect, useState } from "react";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import useAuthStore from "./stores/authStore";
-import { login, signup } from "./api";
+import { createFamily, login, signup } from "./api";
 import type { apiAuthType } from "./types";
 import Home from "./components/Home";
+import useFamilyStore from "./stores/familyStore";
+import { FaRegUserCircle, FaRegEye } from "react-icons/fa";
+import { MdOutlineLightMode, MdOutlineDarkMode } from 'react-icons/md';
+import { BiLogOutCircle } from 'react-icons/bi';
 
 function App() {
   const { token, user, setAuth, clearAuth } = useAuthStore();
+  const { addFamily } = useFamilyStore();
   const [mode, setMode] = useState("login");
   const [darkMode, setDarkMode] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -68,6 +73,13 @@ function App() {
     }
   }
 
+  async function handleFamilyCreate(familyData) {
+    const n = await createFamily(token, { ...familyData, userId: user.id });
+    addFamily(n.family);
+    user.familyId = n.family.id;
+    setAuth(token, user);
+  }
+
   if (!token) {
     return mode === "signup" ? (
       <Signup onSignup={handleSignup} switchToLogin={() => setMode("login")} errorMsg={errorMsg} />
@@ -76,10 +88,16 @@ function App() {
     );
   }
 
-  // if !family 
-  // return Join a family or create one
-  if (!user?.familyId) {
-    return <Home user={user} setDarkMode={setDarkMode} darkMode={darkMode} />
+
+  if (user.familyId === 'NULL') {
+    return <Home user={user}
+      handleFamilyCreate={handleFamilyCreate}
+      setDarkMode={setDarkMode}
+      darkMode={darkMode}
+      clearAuth={clearAuth}
+      successMsg={successMsg}
+      errorMsg={errorMsg}
+    />
   }
 
   return (
@@ -90,6 +108,30 @@ function App() {
         </h1>
         <p className="text-[var(--text-secondary)]">Stay organized together.</p>
       </header>
+
+      <div className="flex justify-between items-center gap-5 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl p-6 w-full max-w-2xl mb-5">
+        <button className="flex items-center gap-3 hover:bg-[var(--accent-hover)] hover:text-white font-medium rounded-xl py-2 px-4 transition-all">
+          <FaRegUserCircle className="w-8 h-8 text-accent" />
+          <p>{user.name}</p>
+        </button>
+
+        <div className="flex gap-2">
+          <button className=' px-4 py-2 rounded-full bg-[var(--secondary)] hover:bg-[var(--secondary-hover)] text-white font-medium transition-all'>
+            <FaRegEye />
+          </button>
+
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className=" px-4 py-2 rounded-full bg-[var(--secondary)] hover:bg-[var(--secondary-hover)] text-white font-medium transition-all"
+          >
+            {darkMode ? <MdOutlineLightMode /> : <MdOutlineDarkMode />}
+          </button>
+
+          <button onClick={() => { clearAuth(); }} className=' px-4 py-2 rounded-full bg-[var(--secondary)] hover:bg-[var(--secondary-hover)] text-white font-medium transition-all'>
+            <BiLogOutCircle />
+          </button>
+        </div>
+      </div>
 
       {successMsg && (
         <p className="text-green-500 text-sm mb-2">{successMsg}</p>
@@ -105,17 +147,6 @@ function App() {
           Add Task
         </button>
       </div>
-
-      <div>
-        <button onClick={() => { clearAuth(); }} className='bg-blue-600 px-5 py-1 rounded-xl hover:bg-blue-300 text-white'>Logout</button>
-      </div>
-
-      <button
-        onClick={() => setDarkMode(!darkMode)}
-        className="mt-10 px-4 py-2 rounded-full bg-[var(--secondary)] hover:bg-[var(--secondary-hover)] text-white font-medium transition-all"
-      >
-        Toggle {darkMode ? "Light" : "Dark"} Mode
-      </button>
     </div>
   );
 }
