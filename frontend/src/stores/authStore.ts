@@ -1,10 +1,18 @@
 import { create } from 'zustand';
 
+export type userType = {
+    id: number,
+    name: string,
+    email: string,
+    password: string,
+    familyId: number
+}
+
 
 export type authType = {
     token: string | null,
-    user: string | null,
-    setAuth: (token: string, user: string) => void,
+    user: userType | null,
+    setAuth: (token: string, user: userType) => void,
     clearAuth: () => void
 }
 

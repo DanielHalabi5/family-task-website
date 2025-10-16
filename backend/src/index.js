@@ -2,6 +2,7 @@ import express, { json } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './auth.js';
+import familyRoutes from './family.js';
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ app.use(cors({ origin: true }));
 app.use(json());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/family', familyRoutes);
 
 
 app.get('/', (req, res) => res.json({ ok: true }));

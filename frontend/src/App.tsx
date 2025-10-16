@@ -4,9 +4,10 @@ import Signup from "./components/Signup";
 import useAuthStore from "./stores/authStore";
 import { login, signup } from "./api";
 import type { apiAuthType } from "./types";
+import Home from "./components/Home";
 
 function App() {
-  const { token, setAuth, clearAuth } = useAuthStore();
+  const { token, user, setAuth, clearAuth } = useAuthStore();
   const [mode, setMode] = useState("login");
   const [darkMode, setDarkMode] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -23,7 +24,7 @@ function App() {
       const res = await login(creds);
       setSuccessMsg('');
       setAuth(res.token, res.user);
-            setSuccessMsg("Your Account was logged in Successfully!")
+      setSuccessMsg("Your Account was logged in Successfully!")
       setTimeout(() => {
         setSuccessMsg('');
       }, 5000);
@@ -69,7 +70,7 @@ function App() {
 
   if (!token) {
     return mode === "signup" ? (
-      <Signup onSignup={handleSignup} switchToLogin={() => setMode("login")} errorMsg={errorMsg}  />
+      <Signup onSignup={handleSignup} switchToLogin={() => setMode("login")} errorMsg={errorMsg} />
     ) : (
       <Login onLogin={handleLogin} switchToSignup={() => setMode("signup")} errorMsg={errorMsg} />
     );
@@ -77,6 +78,9 @@ function App() {
 
   // if !family 
   // return Join a family or create one
+  if (!user?.familyId) {
+    return <Home user={user} setDarkMode={setDarkMode} darkMode={darkMode} />
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center py-10 bg-[var(--bg)] text-[var(--text)] transition-all duration-300">
@@ -87,7 +91,7 @@ function App() {
         <p className="text-[var(--text-secondary)]">Stay organized together.</p>
       </header>
 
-       {successMsg && (
+      {successMsg && (
         <p className="text-green-500 text-sm mb-2">{successMsg}</p>
       )}
 

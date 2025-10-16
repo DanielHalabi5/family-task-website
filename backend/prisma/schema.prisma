@@ -9,32 +9,58 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
-  ownedTasks     Task[] @relation("OwnerTasks")
-  assignedTasks  Task[] @relation("AssignedTasks")
-  families       Family[] @relation("FamilyMembers")
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  password     String
+  name         String?
+  createdAt    DateTime  @default(now())
+
+  familyId     Int?
+  family       Family?   @relation("FamilyMembers", fields: [familyId], references: [id])
+  ownedFamily  Family?   @relation("FamilyOwner")
+
+  ownedTasks     Task[]  @relation("OwnerTasks")
+  assignedTasks  Task[]  @relation("AssignedTasks")
+
+  sentRequests   FamilyJoinRequest[] @relation("UserRequests")
 }
 
 model Family {
-  id        Int      @id @default(autoincrement())
-  name      String
-  createdAt DateTime @default(now())
-  members   User[]   @relation("FamilyMembers")
+  id         Int       @id @default(autoincrement())
+  name       String
+  createdAt  DateTime  @default(now())
+
+  ownerId    Int       @unique
+  owner      User      @relation("FamilyOwner", fields: [ownerId], references: [id])
+
+  members    User[]    @relation("FamilyMembers")
+
+  joinRequests FamilyJoinRequest[] @relation("FamilyRequests")
 }
 
 model Task {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   title        String
   content      String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  dueDate      DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  dueDate      DateTime
+
   ownerId      Int
-  owner        User     @relation("OwnerTasks", fields: [ownerId], references: [id])
   assignedToId Int
-  assignedTo   User     @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  owner        User      @relation("OwnerTasks", fields: [ownerId], references: [id])
+  assignedTo   User      @relation("AssignedTasks", fields: [assignedToId], references: [id])
+}
+
+model FamilyJoinRequest {
+  id         Int      @id @default(autoincrement())
+
+  user       User     @relation("UserRequests", fields: [userId], references: [id])
+  userId     Int
+
+  family     Family   @relation("FamilyRequests", fields: [familyId], references: [id])
+  familyId   Int
+
+  status     String   @default("PENDING") 
+  createdAt  DateTime @default(now())
 }
