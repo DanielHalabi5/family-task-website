@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import useAuthStore from "./stores/authStore";
-import { login, signup, type apiAuthType } from "./api";
+import { login, signup } from "./api";
+import type { apiAuthType } from "./types";
 
 function App() {
-  const { token, setAuth } = useAuthStore();
+  const { token, setAuth, clearAuth } = useAuthStore();
   const [mode, setMode] = useState("login");
   const [darkMode, setDarkMode] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
     const html = document.documentElement;
@@ -16,22 +19,64 @@ function App() {
   }, [darkMode]);
 
   async function handleLogin(creds: apiAuthType) {
-    const res = await login(creds);
-    setAuth(res.token, res.user);
+    try {
+      const res = await login(creds);
+      setSuccessMsg('');
+      setAuth(res.token, res.user);
+            setSuccessMsg("Your Account was logged in Successfully!")
+      setTimeout(() => {
+        setSuccessMsg('');
+      }, 5000);
+    } catch (err: any) {
+      if (err.response && err.response.data && err.response.data.error) {
+        setErrorMsg(err.response.data.error);
+        setTimeout(() => {
+          setErrorMsg('');
+        }, 5000);
+      } else {
+        setErrorMsg('Something went wrong.');
+        setTimeout(() => {
+          setErrorMsg('');
+        }, 5000);
+      }
+    }
   }
 
   async function handleSignup(creds: apiAuthType) {
-    const res = await signup(creds);
-    setAuth(res.token, res.user);
+    try {
+      setErrorMsg('');
+      setSuccessMsg('');
+      const res = await signup(creds);
+      setAuth(res.token, res.user);
+      setSuccessMsg("Your Account was created Successfully!")
+      setTimeout(() => {
+        setSuccessMsg('');
+      }, 5000);
+    } catch (err: any) {
+      if (err.response && err.response.data && err.response.data.error) {
+        setErrorMsg(err.response.data.error);
+        setTimeout(() => {
+          setErrorMsg('');
+        }, 5000);
+      } else {
+        setErrorMsg('Something went wrong.');
+        setTimeout(() => {
+          setErrorMsg('');
+        }, 5000);
+      }
+    }
   }
 
   if (!token) {
     return mode === "signup" ? (
-      <Signup onSignup={handleSignup} switchToLogin={() => setMode("login")} />
+      <Signup onSignup={handleSignup} switchToLogin={() => setMode("login")} errorMsg={errorMsg}  />
     ) : (
-      <Login onLogin={handleLogin} switchToSignup={() => setMode("signup")} />
+      <Login onLogin={handleLogin} switchToSignup={() => setMode("signup")} errorMsg={errorMsg} />
     );
   }
+
+  // if !family 
+  // return Join a family or create one
 
   return (
     <div className="min-h-screen flex flex-col items-center py-10 bg-[var(--bg)] text-[var(--text)] transition-all duration-300">
@@ -42,6 +87,10 @@ function App() {
         <p className="text-[var(--text-secondary)]">Stay organized together.</p>
       </header>
 
+       {successMsg && (
+        <p className="text-green-500 text-sm mb-2">{successMsg}</p>
+      )}
+
       <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl p-6 w-full max-w-2xl">
         <input
           type="text"
@@ -51,6 +100,10 @@ function App() {
         <button className="w-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-medium rounded-xl py-3 transition-all active:scale-95">
           Add Task
         </button>
+      </div>
+
+      <div>
+        <button onClick={() => { clearAuth(); }} className='bg-blue-600 px-5 py-1 rounded-xl hover:bg-blue-300 text-white'>Logout</button>
       </div>
 
       <button
