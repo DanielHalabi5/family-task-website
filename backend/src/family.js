@@ -1,8 +1,12 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from './prisma.js';
+import middleware from './middleware.js';
+import cors from 'cors';
 
 const router = Router();
+router.use(cors());
+
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
 
 const { sign } = jwt;
@@ -41,24 +45,23 @@ router.post('/create', async (req, res) => {
   }
 });
 
-router.get('/members/:id', async (req, res) => {
+router.get('/', middleware, async (req, res) => {
   try {
-    const familyId = Number(req.params.id);
-    const familyMember = await prisma.family.findMany({
-      where: { id: familyId },
+    const familyMembers = await prisma.user.findMany({
+      where: {
+        familyId: req.user.familyId, 
+      },
+      select: { id: true, name: true },
     });
-
-    if (!note) return res.status(404).json({ error: 'Not found' });
-    res.json(familyMember);
-  } catch (error) {
-    console.error(err);
+    res.json(familyMembers);
+  } catch (err) {
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
 
 router.delete('/:id', async (req, res) => {
   const familyId = Number(req.params.id);
-  const { userId } = req.body; // the user to remove
+  const { userId } = req.body;
 
   try {
     const family = await prisma.family.findUnique({ where: { id: familyId } });
@@ -75,6 +78,22 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: `User was successfully removed from the family.` });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
+router.get('/details', middleware, async (req, res) => {
+  try {
+    const family = await prisma.family.findUnique({
+      where: { id: req.user.familyId },
+      include: {
+        owner: { select: { id: true, name: true } },
+        members: { select: { id: true, name: true } }
+      }
+    });
+    res.json(family);
+  } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });

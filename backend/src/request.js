@@ -2,6 +2,7 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from './prisma.js';
 import cors from 'cors';
+import middleware from './middleware.js';
 
 const router = Router();
 
@@ -43,8 +44,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.post('/:id', async (req, res) => {
-  const { requestId } = req.params;
+router.post('/:id', middleware, async (req, res) => {
+  const requestId = req.params.id;
   const { action } = req.body;
   const ownerId = req.user.id;
 
@@ -82,6 +83,36 @@ router.post('/:id', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ err: 'Server error', details: err.message });
+  }
+});
+
+router.get('/pending', middleware, async (req, res) => {
+  try {
+    const family = await prisma.family.findUnique({
+      where: { ownerId: req.user.id }
+    });
+
+    if (!family) {
+      return res.status(403).json({ error: 'Not a family owner' });
+    }
+
+    const requests = await prisma.familyJoinRequest.findMany({
+      where: {
+        familyId: family.id,
+        status: 'PENDING'
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json(requests);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

@@ -12,6 +12,7 @@ type Props = {
   clearAuth: () => void,
   successMsg: string,
   errorMsg: string,
+  handleJoin: (familyId: number) => void,
 }
 
 const Home = ({ user, setDarkMode, darkMode, handleFamilyCreate, clearAuth, successMsg, errorMsg, handleJoin }: Props) => {

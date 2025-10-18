@@ -2,31 +2,42 @@ import { useEffect, useState } from "react";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import useAuthStore from "./stores/authStore";
-import { createFamily, login, signup } from "./api";
+import { approveJoinRequest, createFamily, createTask, deleteTask, login, rejectJoinRequest, signup, updateTask } from "./api";
 import type { apiAuthType } from "./types";
 import Home from "./components/Home";
 import useFamilyStore from "./stores/familyStore";
-import { FaRegUserCircle, FaRegEye } from "react-icons/fa";
-import { MdOutlineLightMode, MdOutlineDarkMode } from 'react-icons/md';
-import { BiLogOutCircle } from 'react-icons/bi';
+import JoinRequests from "./components/JoinRequests";
 import useJoinRequestStore from "./stores/joinRequestStore";
+import useTasksStore from "./stores/taskStore";
+import TasksList from "./components/TasksList";
+import EditTask from "./components/EditTask";
 
 function App() {
   const { token, user, setAuth, clearAuth } = useAuthStore();
-  const { addFamily } = useFamilyStore();
-  const { sendJoinRequest, clearStatus } = useJoinRequestStore();
+  const { families, fetchFamilies, addFamily } = useFamilyStore();
+  const { requests, sendJoinRequest, clearStatus, fetchRequests } = useJoinRequestStore();
+  const { tasks, fetchTasks, addTask, updateTasksFunction, removeTask } = useTasksStore();
 
 
   const [mode, setMode] = useState("login");
   const [darkMode, setDarkMode] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [showJoinRequests, setShowJoinRequests] = useState(false);
 
   useEffect(() => {
     const html = document.documentElement;
     if (darkMode) html.classList.add("dark");
     else html.classList.remove("dark");
   }, [darkMode]);
+
+  useEffect(() => {
+    if (token) {
+      fetchFamilies(token);
+      fetchTasks(token);
+      fetchRequests(token);
+    }
+  }, [token, fetchFamilies, fetchTasks, fetchRequests]);
 
   async function handleLogin(creds: apiAuthType) {
     try {
@@ -123,6 +134,42 @@ function App() {
     }
   };
 
+  async function handleCreate(taskData) {
+    const n = await createTask(token, taskData);
+    addTask(n);
+  }
+
+  async function handleUpdate(id, data) {
+    const n = await updateTask(token, id, data);
+    updateTasksFunction(n);
+  }
+
+  async function handleDelete(id) {
+    await deleteTask(token, id);
+    removeTask(id);
+  }
+
+  async function handleApproveRequest(requestId) {
+    try {
+      await approveJoinRequest(token, requestId);
+      setSuccessMsg("Request approved successfully!");
+      setTimeout(() => setSuccessMsg(''), 5000);
+    } catch (err) {
+      setErrorMsg("Failed to approve request");
+      setTimeout(() => setErrorMsg(''), 5000);
+    }
+  }
+
+  async function handleRejectRequest(requestId) {
+    try {
+      await rejectJoinRequest(token, requestId);
+      setSuccessMsg("Request rejected successfully!");
+      setTimeout(() => setSuccessMsg(''), 5000);
+    } catch (err) {
+      setErrorMsg("Failed to reject request");
+      setTimeout(() => setErrorMsg(''), 5000);
+    }
+  }
 
 
   if (!token) {
@@ -130,6 +177,23 @@ function App() {
       <Signup onSignup={handleSignup} switchToLogin={() => setMode("login")} errorMsg={errorMsg} />
     ) : (
       <Login onLogin={handleLogin} switchToSignup={() => setMode("signup")} errorMsg={errorMsg} />
+    );
+  }
+
+  if (showJoinRequests) {
+    return (
+      <JoinRequests
+        user={user}
+        setDarkMode={setDarkMode}
+        darkMode={darkMode}
+        clearAuth={clearAuth}
+        successMsg={successMsg}
+        errorMsg={errorMsg}
+        requests={requests}
+        onApprove={handleApproveRequest}
+        onReject={handleRejectRequest}
+        onBack={() => setShowJoinRequests(false)}
+      />
     );
   }
 
@@ -145,53 +209,20 @@ function App() {
     />
   } else {
     return (
-      <div className="min-h-screen flex flex-col items-center py-10 bg-[var(--bg)] text-[var(--text)] transition-all duration-300">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-[var(--accent)]">
-            Family Tasks 🏡
-          </h1>
-          <p className="text-[var(--text-secondary)]">Stay organized together.</p>
-        </header>
-
-        <div className="flex justify-between items-center gap-5 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl p-6 w-full max-w-2xl mb-5">
-          <button className="flex items-center gap-3 hover:bg-[var(--accent-hover)] hover:text-white font-medium rounded-xl py-2 px-4 transition-all">
-            <FaRegUserCircle className="w-8 h-8 text-accent" />
-            <p>{user.name}</p>
-          </button>
-
-          <div className="flex gap-2">
-            <button className=' px-4 py-2 rounded-full bg-[var(--secondary)] hover:bg-[var(--secondary-hover)] text-white font-medium transition-all'>
-              <FaRegEye />
-            </button>
-
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className=" px-4 py-2 rounded-full bg-[var(--secondary)] hover:bg-[var(--secondary-hover)] text-white font-medium transition-all"
-            >
-              {darkMode ? <MdOutlineLightMode /> : <MdOutlineDarkMode />}
-            </button>
-
-            <button onClick={() => { clearAuth(); }} className=' px-4 py-2 rounded-full bg-[var(--secondary)] hover:bg-[var(--secondary-hover)] text-white font-medium transition-all'>
-              <BiLogOutCircle />
-            </button>
-          </div>
-        </div>
-
-        {successMsg && (
-          <p className="text-green-500 text-sm mb-2">{successMsg}</p>
-        )}
-
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl p-6 w-full max-w-2xl">
-          <input
-            type="text"
-            placeholder="Add a new task..."
-            className="w-full px-4 py-3 mb-4 rounded-xl border border-[var(--border)] bg-[var(--bg)] focus:ring-2 focus:ring-[var(--accent)] outline-none transition"
-          />
-          <button className="w-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-medium rounded-xl py-3 transition-all active:scale-95">
-            Add Task
-          </button>
-        </div>
-      </div>
+      <>
+        <EditTask
+          user={user}
+          familyMembers={families}
+          onCreate={handleCreate}
+          setDarkMode={setDarkMode}
+          darkMode={darkMode}
+          clearAuth={clearAuth}
+          successMsg={successMsg}
+          errorMsg={errorMsg}
+          onViewRequests={() => setShowJoinRequests(true)}
+        />
+        <TasksList tasks={tasks} onUpdate={handleUpdate} onDelete={handleDelete} />
+      </>
     );
   }
 }

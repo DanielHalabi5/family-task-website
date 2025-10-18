@@ -11,18 +11,29 @@ const { sign } = jwt;
 // Signup route
 router.post('/signup', async (req, res) => {
   const { email, password, name } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  if (!email || !password)
+    return res.status(400).json({ error: 'Email and password required' });
 
   try {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(409).json({ error: 'User already exists' });
 
     const hashed = await hash(password, 10);
-    const user = await prisma.user.create({ data: { email, password: hashed, name } });
+    const user = await prisma.user.create({
+      data: { email, password: hashed, name },
+    });
 
     const token = sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name,   familyId: user.familyId, } });
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        familyId: user.familyId,
+      },
+    });
   } catch (error) {
     console.error('Full error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
@@ -32,7 +43,8 @@ router.post('/signup', async (req, res) => {
 // Login route
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email or password required' });
+  if (!email || !password)
+    return res.status(400).json({ error: 'Email or password required' });
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
@@ -43,7 +55,15 @@ router.post('/login', async (req, res) => {
 
     const token = sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, familyId: user.familyId, } });
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        familyId: user.familyId,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -55,7 +75,8 @@ router.get('/:id', async (req, res) => {
   try {
     const ownerId = parseInt(req.params.id, 10);
     const user = await prisma.user.findUnique({ where: { id: ownerId } });
-    res.json(user);
+    const token = sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error', details: err.message });
